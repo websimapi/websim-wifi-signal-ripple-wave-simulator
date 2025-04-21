@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi Signal Ripple Wave Simulator</title>
+    <title>WiFi Network Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:400,wght@0,400;0,700&display=swap" relstylesheet">
     <style>
         body {
             margin: 0;
@@ -43,13 +44,71 @@
             margin-top: 0;
             text-align: center;
         }
+        .equipment {
+            position: absolute;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            z-index: 1;
+        }
+        .equipment:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 1px rgba(124, 252, 256, 0.5);
+        }
+        .router {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #4CAF50, #2E91E6);
+            border-radius: 1%;
+        }
+        .satellite {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #2196F3, #F44336);
+            clip-path: polygon(0% 0%, 100% 50%, 0% 100%, 50% 65%);
+        }
+        .tower {
+            width: 40px;
+            height: 10px;
+            background: repeating-linear-gradient(to right, #777, #ddd, #777, #333 5px, #333 5px);
+            position: relative;
+        }
+        .tower::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 11px;
+            background: #333;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 100%);
+        }
+        #equipmentContainer {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .equipmentConstructor {
+            padding: 10px;
+            background: none;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
     <canvas id="wifiCanvas"></canvas>
-    
+    <div id="equipmentContainer"></div>
+
     <div class="controls">
-        <h1>WiFi Signal Simulator</h1>
+        <h1>WiFi Network Simulator</h1>
         
         <label>
             Signal Strength:
@@ -73,9 +132,14 @@
             Signal Color:
             <input type="color" id="signalColor" value="#4CAF50">
         </label>
+        <div class="equipmentConstructor">
+            <button id="addRouter">Add Router</button>
+            <button id="addSatellite">Add Satellite</button>
+            <button id="addTower">Add Tower</button>
+        </div>
     </div>
 
-    <script>
+    <script type="module">
         const canvas = document.getElementById('wifiCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -107,6 +171,74 @@
         let waves = [];
         const MAX_WAVES = 5;
         
+        // Equipment
+        const equipment = [];
+
+        const equipmentTypes = {
+            routers: [
+                {x: canvas.width / 2, y: canvas.height / 2, type: 'router', radius: 0, maxRadius: null, speed: 0, alpha: 1}
+            ],
+            satellites: [
+                {x: 100, y: 0, type: 'satellite', radius: 0, maxRadius: null, speed: 0, alpha: 1}
+            ],
+            towers: [
+                {x: canvas.width / 2, y: canvas.height / 2, type: 'tower', radius: 0, maxRadius: null, speed: 0, alpha: 1}
+            ]
+        };
+
+        // Equipment constructor
+        function createEquipment(type, x, y) {
+            const element = document.createElement('div');
+            element.className = type;
+            x = x ?? (Math.random() * (canvas.width / 2) + canvas.width / 4);
+            y = y ?? (Math.random() * (canvas.height / 2) + canvas.height / 4);
+
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+
+            document.getElementById('equipmentContainer').appendChild(element);
+            equipment.push({x, y, type});
+        }
+
+        // Update wave
+        function updateWave(wave) {
+            if (wave.type === 'router') {
+                wave.radius = 0.5;
+                if (Math.random() < 0.1) {
+                    waves.push({
+                        x: wave.x,
+                        y: wave.y,
+                        radius: 0,
+                        maxRadius: wave.alpha,
+                        speed: wave.speed,
+                        alpha: 1
+                    });
+                }
+            } else if (wave.type === 'satellite') {
+                if (Math.random() < 0.02 * transmissionSpeed.value) {
+                    waves.push({
+                        x: wave.x,
+                        y: wave.y,
+                        radius: 0,
+                        maxRadius: 100,
+                        speed: 2,
+                        alpha: 0.6
+                    });
+                }
+            } else if (wave.type === 'tower') {
+                if (Math.random() < 0.03 * transmissionSpeed.value) {
+                    waves.push({
+                        x: wave.x + Math.random() * 10,
+                        y: wave.y - 8,
+                        radius: 0,
+                        maxRadius: 7,
+                        speed: 1,
+                        alpha: 0.5
+                    });
+                }
+            }
+        }
+
         // Main animation loop
         function animate() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -164,12 +296,29 @@
                 }
             }
             
+            // Update equipment
+            for (const equip of equipment) {
+                updateWave(equip);
+            }
+            
             requestAnimationFrame(animate);
         }
-        
+
+        // Drag and drop equipment creation
+        document.querySelector('#addRouter').addEventListener('click', () => {
+            createEquipment('router', null, null);
+        });
+
+        document.querySelector('#addSatellite').addEventListener('click', () => {
+            createEquipment('satellite', null, null);
+        });
+
+        document.querySelector('#addTower').addEventListener('click', () => {
+            createEquipment('tower', null, null);
+        });
+
         animate();
     </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-
