@@ -264,7 +264,13 @@
                 
                 // Calculate distortion based on noise level
                 const distortionAngle = Math.random() * Math.PI * 2;
-                const distortionAmount = noiseLevel.value * 2;
+                const distortionAmount = Math.max(0, noiseLevel.value * 2);
+                
+                // Ensure wave properties are valid numbers before drawing
+                if (!Number.isFinite(wave.x) || !Number.isFinite(wave.y) || !Number.isFinite(wave.radius)) {
+                    waves.splice(i, 1);
+                    continue;
+                }
                 
                 ctx.beginPath();
                 ctx.arc(
