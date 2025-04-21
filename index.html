@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Signal Ripple Wave Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: 'Arial', sans-serif;
+        }
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+        label {
+            display: block;
+            margin: 8px 0;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        .value-display {
+            color: #4CAF50;
+            margin-left: 10px;
+        }
+        h1 {
+            color: #4CAF50;
+            margin-top: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="wifiCanvas"></canvas>
+    
+    <div class="controls">
+        <h1>WiFi Signal Simulator</h1>
+        
+        <label>
+            Signal Strength:
+            <input type="range" id="signalStrength" min="1" max="10" value="5" step="1">
+            <span id="strengthValue" class="value-display">5</span>
+        </label>
+        
+        <label>
+            Transmission Speed:
+            <input type="range" id="transmissionSpeed" min="1" max="10" value="5" step="1">
+            <span id="speedValue" class="value-display">5</span>
+        </label>
+        
+        <label>
+            Noise Level:
+            <input type="range" id="noiseLevel" min="0" max="10" value="3" step="1">
+            <span id="noiseValue" class="value-display">3</span>
+        </label>
+        
+        <label>
+            Signal Color:
+            <input type="color" id="signalColor" value="#4CAF50">
+        </label>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wifiCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Get control elements
+        const signalStrength = document.getElementById('signalStrength');
+        const transmissionSpeed = document.getElementById('transmissionSpeed');
+        const noiseLevel = document.getElementById('noiseLevel');
+        const signalColor = document.getElementById('signalColor');
+        
+        // Display values
+        const strengthValue = document.getElementById('strengthValue');
+        const speedValue = document.getElementById('speedValue');
+        const noiseValue = document.getElementById('noiseValue');
+        
+        // Update value displays
+        signalStrength.addEventListener('input', () => strengthValue.textContent = signalStrength.value);
+        transmissionSpeed.addEventListener('input', () => speedValue.textContent = transmissionSpeed.value);
+        noiseLevel.addEventListener('input', () => noiseValue.textContent = noiseLevel.value);
+        
+        // Wave properties
+        let waves = [];
+        const MAX_WAVES = 5;
+        
+        // Main animation loop
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add new waves based on transmission speed
+            if (Math.random() < (transmissionSpeed.value / 20)) {
+                if (waves.length < MAX_WAVES) {
+                    waves.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        radius: 0,
+                        maxRadius: 50 + Math.random() * 100 * signalStrength.value,
+                        speed: 0.5 + Math.random() * 2 * transmissionSpeed.value / 10,
+                        alpha: 0.8 - (noiseLevel.value * 0.05)
+                    });
+                }
+            }
+            
+            // Draw and update waves
+            for (let i = waves.length - 1; i >= 0; i--) {
+                const wave = waves[i];
+                
+                // Calculate distortion based on noise level
+                const distortionAngle = Math.random() * Math.PI * 2;
+                const distortionAmount = noiseLevel.value * 2;
+                
+                ctx.beginPath();
+                ctx.arc(
+                    wave.x + Math.cos(distortionAngle) * distortionAmount,
+                    wave.y + Math.sin(distortionAngle) * distortionAmount,
+                    wave.radius, 0, Math.PI * 2
+                );
+                
+                const gradient = ctx.createRadialGradient(
+                    wave.x, wave.y, wave.radius * 0.5,
+                    wave.x, wave.y, wave.radius
+                );
+                
+                gradient.addColorStop(0, signalColor.value);
+                gradient.addColorStop(1, 'transparent');
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = wave.alpha;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                
+                // Update wave
+                wave.radius += wave.speed;
+                
+                // Remove wave if it's too big
+                if (wave.radius > wave.maxRadius) {
+                    waves.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
